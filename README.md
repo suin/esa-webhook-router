@@ -16,9 +16,9 @@
 ## インストール
 
 ```bash
-yarn add @suin/esa-api
+yarn add @suin/esa-webhook-router
 # or
-npm install @suin/esa-api
+npm install @suin/esa-webhook-router
 ```
 
 ## 使い方
