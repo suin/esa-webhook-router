@@ -1,6 +1,6 @@
 {
   "name": "@suin/esa-webhook-router",
-  "version": "0.0.0-development",
+  "version": "1.0.0",
   "description": "esa.io Webhookのペイロードをルーティングする",
   "keywords": [
     "esa",
