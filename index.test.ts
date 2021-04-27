@@ -1,6 +1,8 @@
-import { createRouter } from './index'
 import fs from 'fs'
+import { IncomingMessage } from 'http'
 import { parseRequest, ParseRequestResult } from 'http-string-parser'
+import { createRouter } from './index'
+import { Request as MockRequest } from 'mock-http'
 
 const mockRequest = (name: string): ParseRequestResult => {
   const content = fs
@@ -40,9 +42,9 @@ describe('Router', () => {
         'post_create_with_signature',
       )
       const router = createRouter({ secret: 'other_secret_key' })
-      expect(() => {
-        router.route({ httpMethod, headers, body })
-      }).toThrowError(`Signatures didn't match!`)
+      expect(router.route({ httpMethod, headers, body })).rejects.toThrowError(
+        `Signatures didn't match!`,
+      )
     })
   })
 
@@ -80,5 +82,37 @@ describe('Router', () => {
       })
       router.route({ httpMethod, headers, body })
     })
+  })
+})
+
+describe('Incoming Message support', () => {
+  test('handle post_create event', end => {
+    const req = mockRequest('post_create')
+    const request: IncomingMessage = new MockRequest({
+      method: req.method,
+      headers: req.headers,
+      buffer: Buffer.from(req.body),
+    })
+    const router = createRouter()
+    router.on('post_create', payload => {
+      expect(payload).toEqual(JSON.parse(req.body))
+      end()
+    })
+    router.route(request)
+  })
+
+  test('handle post_create event with signature', end => {
+    const { method, headers, body } = mockRequest('post_create_with_signature')
+    const request: IncomingMessage = new MockRequest({
+      method,
+      headers,
+      buffer: Buffer.from(body),
+    })
+    const router = createRouter({ secret: 'my_secret_key' })
+    router.on('post_create', payload => {
+      expect(payload).toEqual(JSON.parse(body))
+      end()
+    })
+    router.route(request)
   })
 })

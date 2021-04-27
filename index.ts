@@ -3,6 +3,8 @@ import { TypedEventEmitter } from '@suin/typed-event-emitter'
 import { APIGatewayProxyEvent } from 'aws-lambda'
 import crypto from 'crypto'
 import { EventEmitter } from 'events'
+import { IncomingMessage } from 'http'
+import getRawBody from 'raw-body'
 
 export const createRouter = (params?: { readonly secret?: string }): Router =>
   new Router(params)
@@ -31,40 +33,27 @@ class Router {
     return this
   }
 
-  /**
-   * Route AWS Lambda event.
-   * @param event
-   */
-  route(event: AwsLambdaEventLike): void
-  route(input: unknown): void {
-    const request = normalizeRequest(input)
-    if (request.httpMethod !== 'POST') {
-      throw new Error(
-        `HTTP method must be POST, but it was ${request.httpMethod}`,
-      )
+  async route(request: Request): Promise<void> {
+    const req = await normalizeRequest(request)
+    if (req.httpMethod !== 'POST') {
+      throw new Error(`HTTP method must be POST, but it was ${req.httpMethod}`)
     }
-    if (typeof request.body !== 'string') {
+    if (typeof req.body !== 'string') {
       throw new Error('HTTP body must be provided')
     }
-    if (
-      typeof request.signature === 'string' &&
-      typeof this.secret === 'string'
-    ) {
+    if (typeof req.signature === 'string' && typeof this.secret === 'string') {
       const calculatedSignature =
         'sha256=' +
-        crypto
-          .createHmac('sha256', this.secret)
-          .update(request.body)
-          .digest('hex')
-      if (request.signature !== calculatedSignature) {
+        crypto.createHmac('sha256', this.secret).update(req.body).digest('hex')
+      if (req.signature !== calculatedSignature) {
         throw new Error(
-          `Signatures didn't match! given: ${request.signature}, calculated: ${calculatedSignature}`,
+          `Signatures didn't match! given: ${req.signature}, calculated: ${calculatedSignature}`,
         )
       }
     }
     let payload: unknown
     try {
-      payload = JSON.parse(request.body)
+      payload = JSON.parse(req.body)
     } catch (e) {
       throw new Error(`Malformed JSON body: ${e.message}`)
     }
@@ -72,6 +61,10 @@ class Router {
     if (!isPayload(payload, errors)) {
       throw new Error(errors.join(' '))
     }
+    this.emit(payload)
+  }
+
+  private emit(payload: Payload): void {
     switch (payload.kind) {
       case kindPostCreate:
         this.events.emit(payload.kind, payload)
@@ -88,6 +81,8 @@ class Router {
     }
   }
 }
+
+type Request = IncomingMessage | AwsLambdaEventLike
 
 const kindPostCreate = 'post_create'
 type KindPostCreate = typeof kindPostCreate
@@ -221,30 +216,52 @@ const isAwsLambdaEventLike = (value: unknown): value is AwsLambdaEventLike =>
 const convertAwaLambdaEventToNormalizeRequest = (
   request: AwsLambdaEventLike,
 ): NormalizedRequest => {
-  const signature = request.headers['x-esa-signature'] as unknown
-  if (!(signature === undefined || typeof signature === 'string')) {
-    throw new Error(
-      `X-Esa-Signature header must be string or undefined: ${JSON.stringify(
-        request,
-      )}`,
-    )
-  }
   return {
     httpMethod: request.httpMethod,
-    signature,
+    signature: pickSignatureFromHeader(request.headers),
     body: request.body ?? undefined,
   }
 }
 
-const normalizeRequest = (request: unknown): NormalizedRequest => {
+const convertIncomingMessageToNormalizedRequest = async (
+  request: IncomingMessage,
+): Promise<NormalizedRequest> => {
+  return {
+    httpMethod: request.method,
+    body: (await getRawBody(request)).toString(),
+    signature: pickSignatureFromHeader(request.headers),
+  }
+}
+
+const normalizeRequest = async (
+  request: Request,
+): Promise<NormalizedRequest> => {
   if (isAwsLambdaEventLike(request)) {
     return convertAwaLambdaEventToNormalizeRequest(request)
   }
-  throw new Error(`Unexpected request: ${JSON.stringify(request)}`)
+  return convertIncomingMessageToNormalizedRequest(request)
 }
 
 type NormalizedRequest = {
   readonly httpMethod?: string
   readonly signature?: string
   readonly body?: string
+}
+
+const pickSignatureFromHeader = (
+  headers: Record<string, unknown>,
+): string | undefined => {
+  const signature = headers['x-esa-signature']
+  if (signature === undefined) {
+    return undefined
+  }
+
+  if (typeof signature !== 'string') {
+    throw new Error(
+      `X-Esa-Signature header must be string or undefined: ${JSON.stringify(
+        headers,
+      )}`,
+    )
+  }
+  return signature
 }
