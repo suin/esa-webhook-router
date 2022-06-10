@@ -75,7 +75,7 @@
     "lint-staged": ">=10",
     "mock-http": "^1.1.0",
     "prettier": "^2.0",
-    "semantic-release": "^17.0.8",
+    "semantic-release": "^19.0.3",
     "sort-package-json": "^1.42.2",
     "ts-jest": "^26.0.0",
     "typedoc": "^0.17.7",
