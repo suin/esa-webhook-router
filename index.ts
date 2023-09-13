@@ -12,7 +12,7 @@ export const createRouter = (params?: { readonly secret?: string }): Router =>
 export type { Router }
 
 class Router {
-  private readonly secret?: string
+  private readonly secret?: string | undefined
   private readonly events = new EventEmitter() as TypedEventEmitter<{
     [kindPostCreate]: PostCreateHandler
     [kindPostUpdate]: PostUpdateHandler
@@ -243,9 +243,9 @@ const normalizeRequest = async (
 }
 
 type NormalizedRequest = {
-  readonly httpMethod?: string
-  readonly signature?: string
-  readonly body?: string
+  readonly httpMethod?: string | undefined
+  readonly signature?: string | undefined
+  readonly body?: string | undefined
 }
 
 const pickSignatureFromHeader = (

@@ -79,11 +79,12 @@
     "sort-package-json": "^1.42.2",
     "ts-jest": "^26.0.0",
     "typedoc": "^0.17.7",
-    "typescript": "^3.9"
+    "typescript": "^5.2.2"
   },
   "publishConfig": {
     "access": "public"
   },
+  "packageManager": "yarn@3.6.3",
   "release": {
     "plugins": [
       "@semantic-release/commit-analyzer",
