@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 18
       - name: Install dependencies
-        run: yarn --frozen-lockfile --ignore-optional
+        run: yarn install --immutable
       - name: Compile
         run: yarn build
 
@@ -38,7 +38,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Install dependencies
-        run: yarn --frozen-lockfile --ignore-optional
+        run: yarn install --immutable
       - name: Test
         run: yarn vitest
 
@@ -54,7 +54,7 @@ jobs:
         with:
           node-version: 18
       - name: Install dependencies
-        run: yarn --frozen-lockfile --ignore-optional
+        run: yarn install --immutable
       - name: Build
         run: yarn build
       - name: Contents of package
