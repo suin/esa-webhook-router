@@ -11,7 +11,12 @@
   - 記事更新時(kind: "post_update")
   - 記事アーカイブ時(kind: "post_archive")
   - 記事削除時(kind: "post_delete")
+  - 記事復旧時(kind: "post_restore")
 - リクエストボディ改ざん防止のための`X-Esa-Signature`に対応しています。
+
+## 動作要件
+
+- Node.js: 18.x 以上
 
 ## インストール
 
@@ -26,62 +31,42 @@ npm install @suin/esa-webhook-router
 ### 基本的な用法
 
 ```typescript
-import { createRouter } from '@suin/esa-webhook-router'
-const router = createRouter()
-
-router.on('post_create', ({ post }) => {
-  console.log(post)
-})
-router.on('post_update', ({ post }) => {
-  console.log(post)
-})
-router.on('post_archive', ({ post }) => {
-  console.log(post)
-})
-router.on('post_delete', ({ post }) => {
-  console.log(post)
-})
+import { createRouter } from "@suin/esa-webhook-router";
+// `createRouter`には、イベントの種類ごとに実行するハンドラー関数を渡します。
+const route = createRouter({
+  post_create: ({ event }) => console.log("投稿が作成されました。", event),
+  post_update: ({ event }) => console.log("投稿が更新されました。", event),
+  post_archive: ({ event }) =>
+    console.log("投稿がアーカイブされました。", event),
+  post_delete: ({ event }) => console.log("投稿が削除されました。", event),
+});
+// `createRouter`の戻り値は関数なので、それにHTTPリクエストを渡すと、ハンドラーが実行されます。
+await route(request);
 ```
 
-### AWS Lambda や Netlify Function で使う
+### AWS LambdaやNetlify Functionで使う
 
-```typescript
-import { APIGatewayProxyHandler } from 'aws-lambda'
-import { createRouter } from '@suin/esa-webhook-router'
-
-const router = createRouter()
-
-export const handler: APIGatewayProxyHandler = (event, context, callback) => {
-  router.on('post_create', ({ team, post, user }) => {
-    console.log({ team, post, user })
-    /* ...team, post, userなどの処理... */
-    callback(null, {
-      statusCode: 200,
-      headers: { 'content-type': 'text/plain' },
-      body: 'OK',
-    })
-  })
-  try {
-    router.route(event)
-  } catch (e) {
-    // エラー処理
-    callback(null, {
-      statusCode: 400,
-      headers: { 'content-type': 'text/plain' },
-      body: e.message,
-    })
-  }
-}
-```
+`createRouter`で作成した関数には、`APIGatewayProxyEvent`を渡すことができるので、AWS LambdaやNetlify Functionでもこのライブラリを用いることができるはずです。動作確認はしてません。
 
 ### `X-Esa-Signature`をあつかう
 
-- [`X-Esa-Signature`の詳細](https://docs.esa.io/posts/37#X-Esa-Signature)
+esa Webhookにはリクエストボディーの署名が[`X-Esa-Signature`](https://docs.esa.io/posts/37#X-Esa-Signature)ヘッダについています。この署名の検証を行うには次の方法のどれかで、シークレットを渡してください。
 
-```typescript
-import { createRouter } from '@suin/esa-webhook-router'
-const router = createRouter({ secret: 'my_secret_key' })
-```
+- 環境変数`ESA_WEBHOOK_SECRET`をセットする。
+- `createRouter`の`secret`オプションをセットする。
+
+どちらも設定されている場合は、`secret`オプションが優先されます。
+
+### 使い方をもっと学ぶ
+
+より詳しい使い方については、[usage.spec.ts](./usage.spec.ts)をご覧ください。
+
+## 動作デモ
+
+いろいろな環境での動作デモを用意してあります。
+
+- [ローカル環境での動作デモ](./demo/local/main.ts): ローカル環境でHTTPサーバーを起動し、esa Webhookを受け取れるようにします。グローバルのURLはCloudflare Tunnelを使って作成しますので、実際のesaチームと結合して動作させることができます。起動するには、このリポジトリを`git clone`し、`yarn install && yarn tsx local/main.ts`を実行してください。
+- [Vercel Functionsでの動作デモ](./api/webhook.ts): Vercel Functionsにデプロイして、esa Webhookを受け取れるようにします。実際のesaチームと結合して動作させることができます。ローカルで実行するには、このリポジトリを`git clone`し、`yarn install && npx vercel dev`を実行してください。
 
 ## API リファレンス
 

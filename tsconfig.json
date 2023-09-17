@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "target": "es2022",
+    "lib": ["es2022", "dom"],
+    "types": ["vitest/importMeta"],
     "module": "commonjs",
     "declaration": true,
     "declarationMap": true,

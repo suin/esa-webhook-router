@@ -4,3 +4,5 @@
 *.map
 !/types/**/*.d.ts
 /reference
+/coverage
+.vercel

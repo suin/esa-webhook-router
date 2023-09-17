@@ -5,7 +5,7 @@ on:
     branches:
       - master
   schedule:
-    - cron: '0 21 * * *' # at 6:00 AM (Asia/Tokyo)
+    - cron: "0 21 * * *" # at 6:00 AM (Asia/Tokyo)
 
 jobs:
   compile:
@@ -17,7 +17,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: 12
+          node-version: 18
       - name: Install dependencies
         run: yarn --frozen-lockfile --ignore-optional
       - name: Compile
@@ -29,11 +29,7 @@ jobs:
     strategy:
       matrix:
         node:
-          - '10'
-          - '11'
-          - '12'
-          - '13'
-          - '14'
+          - "lts/*"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -44,7 +40,7 @@ jobs:
       - name: Install dependencies
         run: yarn --frozen-lockfile --ignore-optional
       - name: Test
-        run: yarn jest
+        run: yarn vitest
 
   release:
     name: Release
@@ -56,7 +52,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v1
         with:
-          node-version: 12
+          node-version: 18
       - name: Install dependencies
         run: yarn --frozen-lockfile --ignore-optional
       - name: Build
@@ -72,7 +68,7 @@ jobs:
         id: check_reference
         uses: andstor/file-existence-action@v1
         with:
-          files: 'reference'
+          files: "reference"
       - name: Publish API reference
         uses: peaceiris/actions-gh-pages@v3
         if: steps.check_reference.outputs.files_exists == 'true'

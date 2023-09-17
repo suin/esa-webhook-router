@@ -1,0 +1,10 @@
+{
+  "buildCommand": "yarn reference",
+  "outputDirectory": "reference",
+  "functions": {
+    "api/webhook.ts": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  }
+}
