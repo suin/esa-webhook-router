@@ -29,7 +29,9 @@ jobs:
     strategy:
       matrix:
         node:
-          - "lts/*"
+          - "18"
+          - "19"
+          - "20"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
